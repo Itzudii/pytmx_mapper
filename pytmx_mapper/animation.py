@@ -1,39 +1,19 @@
-'''
-PyTMX Mapper
-Copyright (c) 2026 Uditya Patel
-Licensed under the MIT License.
-See LICENSE file in the project root for full license text.
-'''
-from typing import List,Dict
+from typing import List
 from pygame import Surface
 
 class Animation:
-    def __init__(self,frames:Dict[str,Dict[int,List[Surface]]],duration:float=53.3,direction:int=1):
+    def __init__(self,frames:List[Surface],duration:float=53.3):
         self.frames = frames
-        self.direction = direction
-
-        self.state:str = 'idle'
-
-        self.current:Dict[int,List[Surface]] = self.frames[self.state]
-
         self.animation_speed = 16/duration
         self.idx = 0
         self.idx_f = 0
         self.isfinished = False
 
-
-    def set_state(self,state:str):
-        if self.state != state:
-            self.state = state
-            self.idx = 0
-            self.idx_f = 0
-            self.current = self.frames[self.state]
-
     def update(self):
         self.idx_f += self.animation_speed
         self.idx = int(self.idx_f)
 
-        if self.idx >= len(self.current[self.direction]):
+        if self.idx >= len(self.frames):
             self.idx = 0
             self.idx_f = 0
             self.isfinished = True
@@ -46,7 +26,7 @@ class Animation:
     
     @property
     def image(self):
-        return self.current[self.direction][self.idx]
+        return self.frames[self.idx]
 
     @property
     def finished(self):

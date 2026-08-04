@@ -20,7 +20,6 @@ class Effect(pygame.sprite.Sprite):
     def animation_loop(self):
             self.idx_f += self.animation_speed
             self.idx = int(self.idx_f)
-            print(self.idx)
     
             if self.idx >= self.len:
                 self.idx = 0

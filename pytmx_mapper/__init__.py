@@ -1,10 +1,3 @@
-'''
-PyTMX Mapper
-Copyright (c) 2026 Uditya Patel
-Licensed under the MIT License.
-See LICENSE file in the project root for full license text.
-'''
-
 from pathlib import Path
 VERSION = 1.0
 

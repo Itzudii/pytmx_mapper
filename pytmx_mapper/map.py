@@ -1,10 +1,3 @@
-'''
-PyTMX Mapper
-Copyright (c) 2026 Uditya Patel
-Licensed under the MIT License.
-See LICENSE file in the project root for full license text.
-'''
-
 import pygame
 import pytmx
 
@@ -16,7 +9,7 @@ from pytmx_mapper.animation import Animation
 from pytmx_mapper.camera import Camera
 from pytmx_mapper.model import Collider, DrawItem, MapFlag, MapRect, MapObject
 from pytmx_mapper.layers import Layer
-from typing import List,Dict,Tuple,Any,DefaultDict
+from typing import List,Dict,Tuple,Any
 
 
 
@@ -42,8 +35,10 @@ class TileMap():
 
         self.camera = Camera(self.window_width,self.window_height)
 
-    def get_surface_by_gid(self,gid:int):
+    def get_surface_by_gid_helper(self,gid:int,gid_:int|None=None):
         src,rect,flag = self.data.get_tile_image_by_gid(gid)
+        if gid_ is not None:
+            _,_,flag = self.data.get_tile_image_by_gid(gid_)
         src = Path(src).resolve()
 
         img = self._cache_images.get(src,None)
@@ -59,16 +54,16 @@ class TileMap():
         subsurface = self._cache_surface.get((tuple(flag),gid))
         return subsurface
 
-    def get_surface_by_obj(self,obj:pytmx.pytmx.TiledObject):
-        return self.get_surface_by_obj_helper(obj)
+    def get_surface_by_gid(self,gid:int):
+        return self.get_surface_by_gid_helper(gid)
 
-    def get_transfrom_frames_by_obj(self,obj:pytmx.pytmx.TiledObject,frames:Any)->Dict[str,Dict[int,List[pygame.Surface]]]:
+    def get_transfrom_frames_by_gid(self,gid:int,frames:Any)->List[pygame.Surface]:
         f:List[pygame.Surface] = []
         for frame in frames:
-            img = self.get_surface_by_obj_helper(obj,frame.gid)
+            img = self.get_surface_by_gid_helper(frame.gid,gid)
             f.append(img)
-        return {'idle':{1:f}}
-            
+        return f
+
     def get_surface_by_obj_helper(self,obj:pytmx.pytmx.TiledObject, gid_:int|None = None):
         gid = obj.gid if gid_ is None else gid_
         rect:Tuple[float,float] = (obj.width,obj.height)
@@ -88,8 +83,18 @@ class TileMap():
             self._cache_surface[(gid,rect,flag)] = pygame.transform.scale_by(modfy_img,self.scale_factor)
         subsurface = self._cache_surface.get((gid,rect,flag))
         return subsurface
+    
+    def get_surface_by_obj(self,obj:pytmx.pytmx.TiledObject):
+        return self.get_surface_by_obj_helper(obj)
 
+    def get_transfrom_frames_by_obj(self,obj:pytmx.pytmx.TiledObject,frames:Any)->List[pygame.Surface]:
+        f:List[pygame.Surface] = []
+        for frame in frames:
+            img = self.get_surface_by_obj_helper(obj,frame.gid)
+            f.append(img)
+        return f
 
+            
     def load_collision_rect_of_normal_tiles(self,layername:str):
         layer:Any = self.data.get_layer_by_name(layername)
         collision_tiles:List[Collider] =[]
@@ -99,12 +104,6 @@ class TileMap():
         return collision_tiles
 
     def load_normal_tiles(self,layername:str):
-        def get_frames(frames:Any):
-            temp:List[pygame.Surface|None] = []
-            for frame in frames:
-                img:pygame.Surface|None = self.get_surface_by_gid(frame.gid)
-                temp.append(img)
-            return {'idle':{1:temp}}
         
         normal_tiles = []
         layer:Any = self.data.get_layer_by_name(layername)
@@ -115,7 +114,7 @@ class TileMap():
                 if prop and 'frames' in prop:
                     # animated
                     frames = prop['frames']
-                    f = get_frames(frames)
+                    f = self.get_transfrom_frames_by_gid(gid,frames)
                     ani = Animation(f,100)
                     normal_tiles.append(DrawItem(None,(x*self.tilesize,y*self.tilesize),ani))
                 else:
