@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pytmx_mapper"
+version = "0.1.0"
+description = "A fast TMX renderer for pygame with automatic scaling, animation, collisions, and object loading."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+
+authors = [
+    { name = "Uditya Patel" }
+]
+
+keywords = [
+    "pygame",
+    "pygame-ce",
+    "tiled",
+    "tmx",
+    "pytmx",
+    "tilemap",
+    "renderer",
+    "gamedev",
+    "2d",
+    "collision"
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+
+    "Topic :: Games/Entertainment",
+    "Topic :: Software Development :: Libraries",
+]
+
+dependencies = [
+    "PyTMX>=3.32",
+    "pygame-ce>=2.5.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/<YOUR_USERNAME>/pytmx_mapper"
+Repository = "https://github.com/<YOUR_USERNAME>/pytmx_mapper"
+Issues = "https://github.com/<YOUR_USERNAME>/pytmx_mapper/issues"
+
+[tool.setuptools]
+packages = ["pytmx_mapper"]
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+skip_gitignore = true

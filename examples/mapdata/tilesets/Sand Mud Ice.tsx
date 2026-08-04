@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tileset version="1.10" tiledversion="1.12.2" name="Sand Mud Ice" tilewidth="16" tileheight="16" tilecount="55" columns="11">
+ <image source="../../assets/Traps/Sand Mud Ice (16x6).png" width="176" height="80"/>
+ <tile id="0" type="sand"/>
+ <tile id="1" type="sand"/>
+ <tile id="2" type="sand"/>
+ <tile id="4" type="grass"/>
+ <tile id="5" type="grass"/>
+ <tile id="6" type="grass"/>
+ <tile id="8" type="ice"/>
+ <tile id="9" type="ice"/>
+ <tile id="10" type="ice"/>
+ <tile id="11" type="sand"/>
+ <tile id="12" type="sand"/>
+ <tile id="13" type="sand"/>
+ <tile id="15" type="grass"/>
+ <tile id="16" type="grass"/>
+ <tile id="17" type="grass"/>
+ <tile id="19" type="ice"/>
+ <tile id="20" type="ice"/>
+ <tile id="21" type="ice"/>
+ <tile id="22" type="sand"/>
+ <tile id="23" type="sand"/>
+ <tile id="24" type="sand"/>
+ <tile id="26" type="grass"/>
+ <tile id="27" type="grass"/>
+ <tile id="28" type="grass"/>
+ <tile id="30" type="ice"/>
+ <tile id="31" type="ice"/>
+ <tile id="32" type="ice"/>
+ <tile id="33" type="sand"/>
+ <tile id="34" type="sand"/>
+ <tile id="37" type="grass"/>
+ <tile id="38" type="grass"/>
+ <tile id="41" type="ice"/>
+ <tile id="42" type="ice"/>
+ <tile id="44" type="sand"/>
+ <tile id="45" type="sand"/>
+ <tile id="48" type="grass"/>
+ <tile id="49" type="grass"/>
+ <tile id="52" type="ice"/>
+ <tile id="53" type="ice"/>
+</tileset>
