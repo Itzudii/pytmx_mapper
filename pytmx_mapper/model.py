@@ -30,9 +30,9 @@ class MapRect:
 @dataclass
 class MapFlag:
     rotate:float
-    flip_x:float
-    flip_y:float
-    flip_diag:float
+    flip_x:bool
+    flip_y:bool
+    flip_diag:bool
 
 @dataclass
 class MapObject:

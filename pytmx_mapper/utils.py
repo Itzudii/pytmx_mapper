@@ -1,5 +1,6 @@
 import pygame
 from typing import Dict,Tuple,Any
+
 def transform_img(flag:Tuple[int,int,int],image:pygame.Surface)->pygame.Surface:
     TRANSFORMS:Dict[Any,Any] = {
         (0, 0, 0): lambda s: s,
@@ -14,4 +15,16 @@ def transform_img(flag:Tuple[int,int,int],image:pygame.Surface)->pygame.Surface:
     }
     return TRANSFORMS[flag](image)
 
+def get_frames(url,col):
+    img = pygame.image.load(url)
+    w = img.get_width()
+    h = img.get_height()
+    tilesize= w//col
 
+    frames_orignal = [img.subsurface(pygame.Rect(tilesize*i,0,tilesize,h)) for i in range(col)]
+    return frames_orignal
+
+def get_transform_images(url,col,size,flag):
+    imgs = get_frames(url,col)
+    scale_img = [pygame.transform.scale(img,size) for img in imgs]
+    return [transform_img((int(flag.flip_x),int(flag.flip_y),int(flag.flip_diag)),img) for img in scale_img]

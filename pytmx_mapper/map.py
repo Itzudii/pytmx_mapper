@@ -46,16 +46,30 @@ class TileMap():
         self.window_height = size[1]
         self.camera = Camera(self.window_width,self.window_height)
 
+    def _load_cache_image(self, src):
+        source = Path(src).resolve()
+
+        img = self._cache_images.get(source)
+        if img is None:
+            img = pygame.image.load(source).convert_alpha()
+            self._cache_images[source] = img
+
+        return img
+
+
+    
+
     def _get_surface_by_gid_helper(self,gid:int,gid_:int|None=None):
         src,rect,flag = self.data.get_tile_image_by_gid(gid)
         if gid_ is not None:
             _,_,flag = self.data.get_tile_image_by_gid(gid_)
-        src = Path(src).resolve()
+        # src = Path(src).resolve()
 
-        img = self._cache_images.get(src)
-        if img is None:
-            img = pygame.image.load(src).convert_alpha()
-            self._cache_images[src] = img
+        img = self._load_cache_image(src)
+        # img = self._cache_images.get(src)
+        # if img is None:
+        #     img = pygame.image.load(src).convert_alpha()
+        #     self._cache_images[src] = img
 
         if (gid,tuple(flag)) not in self._cache_surface:
             raw = img.subsurface(pygame.Rect(*rect))
@@ -76,17 +90,19 @@ class TileMap():
         return f
 
     def _get_surface_by_obj_helper(self,obj:pytmx.pytmx.TiledObject, gid_:int|None = None):
-        gid = obj.gid if gid_ is None else gid_
-        rect:Tuple[float,float] = (obj.width,obj.height)
-        src,_,_ = self.data.get_tile_image_by_gid(gid)
         flag = (obj.flip_x,obj.flip_y,obj.flip_diag)
-        
-        source = Path(src).resolve()
+        rect:Tuple[float,float] = (obj.width,obj.height)
 
-        img = self._cache_images.get(source,None)
-        if not img:
-            img = pygame.image.load(source).convert_alpha()
-            self._cache_images[source] = img
+        gid = obj.gid if gid_ is None else gid_
+        src,_,_ = self.data.get_tile_image_by_gid(gid)
+        
+        # source = Path(src).resolve()
+
+        # img = self._cache_images.get(source,None)
+        # if not img:
+        #     img = pygame.image.load(source).convert_alpha()
+        #     self._cache_images[source] = img
+        img = self._load_cache_image(src)
       
         if (gid,rect,flag) not in self._cache_surface:
             raw = pygame.transform.scale(img,(rect[0],rect[1]))
@@ -126,7 +142,6 @@ class TileMap():
         
         layer:Any = self.data.get_layer_by_name(layername)
         normal_tiles = [[None for _ in range(layer.width)] for _ in range(layer.height)]
-        print(normal_tiles)
 
         for x,y,gid in layer.iter_data():
             if gid != 0:
@@ -178,10 +193,10 @@ class TileMap():
                 r = MapRect(
                     name = collide.name,
                     type = collide.type,
-                    x = collide.x,
-                    y = collide.y,
-                    w = collide.width,
-                    h = collide.height,
+                    x = (obj.x+collide.x)*self.scale_factor,
+                    y = (obj.y+collide.y)*self.scale_factor,
+                    w = collide.width*self.scale_factor,
+                    h = collide.height*self.scale_factor,
                     rotation = collide.rotation
                 )
                 rects.append(r)
@@ -197,6 +212,12 @@ class TileMap():
                 transform=transform,
                 rects=rects
             ))
+            if obj.name == "start":
+                print()
+                print(obj.x,self.scale_factor,obj.y,self.scale_factor)
+                print()
+
+        print('Object loaded successfully')
         return objs
 
     
@@ -242,7 +263,6 @@ class TileMap():
     def draw_layers(self,screen:pygame.Surface):
         for layername in self.draw_order:
             self._draw_layer(layername,screen)
-
 
     def draw_colliders(self,screen:pygame.Surface,layername:str,color:Tuple[int,int,int]):
         for collider in self.colliders[layername]:
