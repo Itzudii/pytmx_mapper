@@ -19,15 +19,20 @@ class TileMap():
         self.layers_structure = layers_struct
 
         self.data = pytmx.TiledMap(filename)
+
         self.tilesize = tilesize
         self.scale_factor = self.tilesize/self.data.tilewidth
+
         self.window_width = self.data.width*self.tilesize
         self.window_height = self.data.height*self.tilesize
+
+        self.visible_tiles_x = self.window_width // self.tilesize + 2
+        self.visible_tiles_y = self.window_height // self.tilesize + 2
 
         self._cache_images:Dict[Any,pygame.Surface] = dict()
         self._cache_surface:Dict[Any,pygame.Surface] = dict()
 
-        self.layers:Dict[str,List[DrawItem]] = dict()
+        self.layers:Dict[str,List[List[DrawItem]]] = dict()
         self.draw_order:List[str] = []
 
         self.colliders:Dict[str,List[Collider]] = dict()
@@ -35,36 +40,42 @@ class TileMap():
 
         self.camera = Camera(self.window_width,self.window_height)
 
-    def get_surface_by_gid_helper(self,gid:int,gid_:int|None=None):
+
+    def resize_map(self,size:Tuple[int,int]):
+        self.window_width = size[0]
+        self.window_height = size[1]
+        self.camera = Camera(self.window_width,self.window_height)
+
+    def _get_surface_by_gid_helper(self,gid:int,gid_:int|None=None):
         src,rect,flag = self.data.get_tile_image_by_gid(gid)
         if gid_ is not None:
             _,_,flag = self.data.get_tile_image_by_gid(gid_)
         src = Path(src).resolve()
 
-        img = self._cache_images.get(src,None)
-        if not img:
+        img = self._cache_images.get(src)
+        if img is None:
             img = pygame.image.load(src).convert_alpha()
             self._cache_images[src] = img
 
-        if (tuple(flag),gid) not in self._cache_surface:
+        if (gid,tuple(flag)) not in self._cache_surface:
             raw = img.subsurface(pygame.Rect(*rect))
             modfy_img = transform_img(flag,raw)
-            self._cache_surface[(tuple(flag),gid)] = pygame.transform.scale_by(modfy_img,self.scale_factor)
+            self._cache_surface[(gid,tuple(flag))] = pygame.transform.scale_by(modfy_img,self.scale_factor)
 
-        subsurface = self._cache_surface.get((tuple(flag),gid))
+        subsurface = self._cache_surface.get((gid,tuple(flag)))
         return subsurface
 
     def get_surface_by_gid(self,gid:int):
-        return self.get_surface_by_gid_helper(gid)
+        return self._get_surface_by_gid_helper(gid)
 
     def get_transfrom_frames_by_gid(self,gid:int,frames:Any)->List[pygame.Surface]:
         f:List[pygame.Surface] = []
         for frame in frames:
-            img = self.get_surface_by_gid_helper(frame.gid,gid)
+            img = self._get_surface_by_gid_helper(frame.gid,gid)
             f.append(img)
         return f
 
-    def get_surface_by_obj_helper(self,obj:pytmx.pytmx.TiledObject, gid_:int|None = None):
+    def _get_surface_by_obj_helper(self,obj:pytmx.pytmx.TiledObject, gid_:int|None = None):
         gid = obj.gid if gid_ is None else gid_
         rect:Tuple[float,float] = (obj.width,obj.height)
         src,_,_ = self.data.get_tile_image_by_gid(gid)
@@ -85,12 +96,12 @@ class TileMap():
         return subsurface
     
     def get_surface_by_obj(self,obj:pytmx.pytmx.TiledObject):
-        return self.get_surface_by_obj_helper(obj)
+        return self._get_surface_by_obj_helper(obj)
 
     def get_transfrom_frames_by_obj(self,obj:pytmx.pytmx.TiledObject,frames:Any)->List[pygame.Surface]:
         f:List[pygame.Surface] = []
         for frame in frames:
-            img = self.get_surface_by_obj_helper(obj,frame.gid)
+            img = self._get_surface_by_obj_helper(obj,frame.gid)
             f.append(img)
         return f
 
@@ -102,11 +113,20 @@ class TileMap():
             rect = pygame.Rect(obj.x*self.scale_factor,obj.y*self.scale_factor,obj.width*self.scale_factor,obj.height*self.scale_factor)
             collision_tiles.append(Collider(obj.name,rect,layername,obj.properties))
         return collision_tiles
+    
+    def _create_draw_item(self, image, animation, x, y, w, h):
+        return DrawItem(
+            image,
+            (x*self.scale_factor, y*self.scale_factor),
+            (w*self.scale_factor, h*self.scale_factor),
+            animation
+        )
 
     def load_normal_tiles(self,layername:str):
         
-        normal_tiles = []
         layer:Any = self.data.get_layer_by_name(layername)
+        normal_tiles = [[None for _ in range(layer.width)] for _ in range(layer.height)]
+        print(normal_tiles)
 
         for x,y,gid in layer.iter_data():
             if gid != 0:
@@ -115,29 +135,31 @@ class TileMap():
                     # animated
                     frames = prop['frames']
                     f = self.get_transfrom_frames_by_gid(gid,frames)
-                    ani = Animation(f,100)
-                    normal_tiles.append(DrawItem(None,(x*self.tilesize,y*self.tilesize),ani))
+                    ani = Animation(f,frames[0].duration)
+                    normal_tiles[y][x] = DrawItem(None,(x*self.tilesize,y*self.tilesize),(self.tilesize,self.tilesize),ani)
                 else:
                     # static
                     img = self.get_surface_by_gid(gid)
-                    normal_tiles.append(DrawItem(img,(x*self.tilesize,y*self.tilesize),None))
+                    normal_tiles[y][x] = DrawItem(img,(x*self.tilesize,y*self.tilesize), (self.tilesize,self.tilesize),None)
         return normal_tiles
 
     def load_decorations_objs(self,layername:str):
-        decorations=[]
         layer = self.data.get_layer_by_name(layername)
+        decorations=[[None for _ in range(self.data.width)] for _ in range(self.data.height)]
         for obj in layer:
             prop = obj.properties
             frames = prop.get('frames')
             if frames:
                 # animated
                 frame = self.get_transfrom_frames_by_obj(obj,frames) 
-                ani = Animation(frame,100)
-                decorations.append(DrawItem(None,(obj.x*self.scale_factor,obj.y*self.scale_factor),ani))
+                ani = Animation(frame,frames[0].duration)
+                decorations[obj.y//self.tilesize][obj.x//self.tilesize] = self._create_draw_item(None,ani,obj.x,obj.y,obj.width,obj.height)
+                # decorations.append(self._create_draw_item(None,ani,obj.x,obj.y,obj.width,obj.height))
             else:
                 # static
                 img = self.get_surface_by_obj(obj)
-                decorations.append(DrawItem(img,(obj.x*self.scale_factor,obj.y*self.scale_factor),None))
+                decorations.append(self._create_draw_item(img,None,obj.x,obj.y,obj.width,obj.height))
+                decorations.append(self._create_draw_item(img,None,obj.x,obj.y,obj.width,obj.height))
         return decorations
 
     def load_objs(self,layername:str):
@@ -190,21 +212,41 @@ class TileMap():
             if layer.name in self.layers:
                 self.draw_order.append(layer.name)
 
-    def draw(self,layername:str,screen:pygame.Surface)->None:
-        for item in self.layers[layername]:
-            if item.animation:
-                item.animation.update()
-                screen.blit(item.animation.image,self.camera.apply_pos(item.pos))
-            else:
-                screen.blit(item.image,self.camera.apply_pos(item.pos))
+
+    def _draw_layer(self, layername: str, screen: pygame.Surface):
+        layer = self.layers[layername]
+    
+        ox = self.camera.offset.x
+        oy = self.camera.offset.y
+        draw = screen.blit
+    
+        start_x = max(0, int(ox // self.tilesize))
+        end_x = min(start_x + self.visible_tiles_x, self.data.width)
+    
+        start_y = max(0, int(oy // self.tilesize))
+        end_y = min(start_y + self.visible_tiles_y, self.data.height)
+    
+        for y in range(start_y, end_y):
+            row = layer[y]
+            for x in range(start_x, end_x):
+                item = row[x]
+                if item is not None:
+                    pos = (item.pos[0] - ox, item.pos[1] - oy)
+    
+                    if item.animation:
+                        item.animation.update()
+                        draw(item.animation.image, pos)
+                    else:
+                        draw(item.image, pos)
+
+    def draw_layers(self,screen:pygame.Surface):
+        for layername in self.draw_order:
+            self._draw_layer(layername,screen)
+
 
     def draw_colliders(self,screen:pygame.Surface,layername:str,color:Tuple[int,int,int]):
         for collider in self.colliders[layername]:
             pygame.draw.rect(screen, color, self.camera.apply_rect(collider.rect), 1)
-
-    def draw_layers(self,screen:pygame.Surface):
-        for layername in self.draw_order:
-            self.draw(layername,screen)
 
 
 

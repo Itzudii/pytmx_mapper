@@ -19,3 +19,10 @@ class Camera:
             pos[0] - self.offset.x,
             pos[1] - self.offset.y
         )
+
+    def can_draw(self,pos,size):
+        x= pos[0] - self.offset.x
+        y= pos[1] - self.offset.y
+        if -size[0] < x <self.screen_width and -size[1] < y <self.screen_height:
+            return (x,y)
+        return None

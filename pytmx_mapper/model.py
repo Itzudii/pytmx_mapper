@@ -14,6 +14,7 @@ class Collider:
 class DrawItem:
     image: pygame.Surface | None
     pos: tuple[int, int]
+    size:tuple[int, int]
     animation: Animation | None
 
 @dataclass
