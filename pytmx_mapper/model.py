@@ -26,6 +26,8 @@ class MapRect:
     w:float
     h:float
     rotation:float
+    dif_x:float
+    dif_y:float
 
 @dataclass
 class MapFlag:

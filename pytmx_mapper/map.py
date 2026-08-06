@@ -20,14 +20,17 @@ class TileMap():
 
         self.data = pytmx.TiledMap(filename)
 
+        self.width = self.data.width
+        self.height = self.data.height
+
         self.tilesize = tilesize
         self.scale_factor = self.tilesize/self.data.tilewidth
 
-        self.window_width = self.data.width*self.tilesize
-        self.window_height = self.data.height*self.tilesize
+        self.width_px = self.data.width*self.tilesize
+        self.height_px = self.data.height*self.tilesize
 
-        self.visible_tiles_x = self.window_width // self.tilesize + 2
-        self.visible_tiles_y = self.window_height // self.tilesize + 2
+        self.visible_tiles_x = self.width_px // self.tilesize + 2
+        self.visible_tiles_y = self.height_px // self.tilesize + 2
 
         self._cache_images:Dict[Any,pygame.Surface] = dict()
         self._cache_surface:Dict[Any,pygame.Surface] = dict()
@@ -38,13 +41,15 @@ class TileMap():
         self.colliders:Dict[str,List[Collider]] = dict()
         self.objs:Dict[str,defaultdict[str,List[MapObject]]] = dict()
 
-        self.camera = Camera(self.window_width,self.window_height)
+        self.camera = Camera(self.width_px,self.height_px)
 
 
     def resize_map(self,size:Tuple[int,int]):
-        self.window_width = size[0]
-        self.window_height = size[1]
-        self.camera = Camera(self.window_width,self.window_height)
+        width_px = size[0]
+        height_px = size[1]
+        self.camera = Camera(width_px,height_px)
+        self.visible_tiles_x = width_px // self.tilesize + 2
+        self.visible_tiles_y = height_px // self.tilesize + 2
 
     def _load_cache_image(self, src):
         source = Path(src).resolve()
@@ -197,9 +202,25 @@ class TileMap():
                     y = (obj.y+collide.y)*self.scale_factor,
                     w = collide.width*self.scale_factor,
                     h = collide.height*self.scale_factor,
-                    rotation = collide.rotation
+                    rotation = collide.rotation,
+                    dif_x = collide.x*self.scale_factor,
+                    dif_y = collide.y*self.scale_factor,
                 )
                 rects.append(r)
+            if len(rects) == 0:
+                r = MapRect(
+                    name = '',
+                    type = '',
+                    x = (obj.x)*self.scale_factor,
+                    y = (obj.y)*self.scale_factor,
+                    w = obj.width*self.scale_factor,
+                    h = obj.height*self.scale_factor,
+                    rotation = 0,
+                    dif_x = 0,
+                    dif_y = 0,
+                )
+                rects.append(r)
+
         
             objs[obj.name].append(MapObject(
                 gid=obj.gid,
