@@ -7,7 +7,7 @@ from collections import defaultdict
 from pytmx_mapper.utils import transform_img
 from pytmx_mapper.animation import Animation
 from pytmx_mapper.camera import Camera
-from pytmx_mapper.model import Collider, DrawItem, MapFlag, MapRect, MapObject
+from pytmx_mapper.model import Collider, DrawItem, MapFlag, MapRect, MapObject, MapShape
 from pytmx_mapper.layers import Layer
 from typing import List,Dict,Tuple,Any
 
@@ -34,12 +34,14 @@ class TileMap():
 
         self._cache_images:Dict[Any,pygame.Surface] = dict()
         self._cache_surface:Dict[Any,pygame.Surface] = dict()
+        self.id_to_obj = dict()
 
         self.layers:Dict[str,List[List[DrawItem]]] = dict()
         self.draw_order:List[str] = []
 
         self.colliders:Dict[str,List[Collider]] = dict()
         self.objs:Dict[str,defaultdict[str,List[MapObject]]] = dict()
+        self.shapes:Dict[str,defaultdict[str,List[MapObject]]] = dict()
 
         self.camera = Camera(self.width_px,self.height_px)
 
@@ -188,9 +190,9 @@ class TileMap():
         for  obj in layer:
             transform = MapFlag(
                 rotate=obj.rotation,
-                flip_x=obj.flip_x,
-                flip_y=obj.flip_y,
-                flip_diag=obj.flip_diag
+                flip_x=obj.flip_x if hasattr(obj,"flip_x") else False,
+                flip_y=obj.flip_y if hasattr(obj,"flip_y") else False,
+                flip_diag=obj.flip_diag if hasattr(obj,"flip_diag") else False
             )
             prop = obj.properties
             rects = []
@@ -221,10 +223,11 @@ class TileMap():
                 )
                 rects.append(r)
 
-        
-            objs[obj.name].append(MapObject(
+            # print(obj.id)
+            o = MapObject(
+                id = obj.id,
                 gid=obj.gid,
-                raw_gid=obj.raw_gid,
+                raw_gid=obj.raw_gid if hasattr(obj,"raw_gid") else None,
                 name=obj.name,
                 type=obj.type,
                 pos=(obj.x*self.scale_factor,obj.y*self.scale_factor),
@@ -232,15 +235,35 @@ class TileMap():
                 prop=obj.properties,
                 transform=transform,
                 rects=rects
-            ))
-            if obj.name == "start":
-                print()
-                print(obj.x,self.scale_factor,obj.y,self.scale_factor)
-                print()
+            )
+            self.id_to_obj[obj.id] = o
+            objs[obj.name].append(o)
 
         print('Object loaded successfully')
         return objs
 
+    def load_polygons(self,layername):
+        objs = defaultdict(list)
+        layer:Any = self.data.get_layer_by_name(layername)
+        for  obj in layer:
+
+            o=MapShape(
+                id = obj.id,
+                points=[(point.x*self.scale_factor,point.y*self.scale_factor) for point in obj.points] if hasattr(obj,"points") else [],
+                name=obj.name,
+                type=obj.type,
+                pos=(obj.x*self.scale_factor,obj.y*self.scale_factor),
+                size=(obj.width*self.scale_factor,obj.height*self.scale_factor),
+                prop=obj.properties,
+                rotate = obj.rotation
+
+            )
+            self.id_to_obj[obj.id] = o
+            objs[obj.name].append(o)
+        return objs
+
+    def get_obj_by_id(self,id):
+        return self.id_to_obj.get(id)
     
     def load(self):
         for layername,type in self.layers_structure.items():
@@ -249,6 +272,7 @@ class TileMap():
                 case Layer.DECORATION:self.layers[layername] = self.load_decorations_objs(layername)
                 case Layer.COLLIDE:self.colliders[layername] = self.load_collision_rect_of_normal_tiles(layername)
                 case Layer.OBJECT:self.objs[layername] = self.load_objs(layername)
+                case Layer.SHAPE:self.shapes[layername] = self.load_polygons(layername)
 
         for layer in self.data.visible_layers:
             if layer.name in self.layers:

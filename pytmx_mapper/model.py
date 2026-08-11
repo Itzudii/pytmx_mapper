@@ -38,6 +38,7 @@ class MapFlag:
 
 @dataclass
 class MapObject:
+    id:int
     gid:int
     raw_gid:int
     name:str
@@ -47,5 +48,16 @@ class MapObject:
     prop:Dict[Any,Any]
     transform:MapFlag
     rects:List[MapRect]
+
+@dataclass
+class MapShape:
+    id:int
+    points:list
+    name:str
+    type:str
+    pos:Tuple[int,int]
+    size:Tuple[int,int]
+    prop:Dict[Any,Any]
+    rotate:int|bool
     
 

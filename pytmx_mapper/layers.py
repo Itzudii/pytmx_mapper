@@ -5,3 +5,4 @@ class Layer(Enum):
     OBJECT = "o"
     DECORATION = "d"
     COLLIDE = "c"
+    SHAPE = 's'
