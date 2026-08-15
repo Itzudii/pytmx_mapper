@@ -237,7 +237,7 @@ class TileMap():
                 rects=rects
             )
             self.id_to_obj[obj.id] = o
-            objs[obj.name].append(o)
+            objs[obj.type].append(o)
 
         print('Object loaded successfully')
         return objs
